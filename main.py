@@ -7,10 +7,13 @@ site_vultr = 'https://www.vultr.com/products/cloud-compute/#pricing'
 site_digital_ocean = 'https://www.digitalocean.com/pricing/#droplet'
 
 def main():
-    data_vultr = get_data_page_vultr(get_page_content(site_vultr))
-    print_result(data_vultr)
+    # data_vultr = get_data_page_vultr(get_page_content(site_vultr))
+    # print_result(data_vultr)
+    # save_csv(data_vultr)
 
-    save_csv(data_vultr)
+    data_digital = get_data_page_digital(get_page_content(site_digital_ocean))
+    print(data_digital)
+    save_csv(data_digital)
 
 
 
@@ -23,19 +26,37 @@ def get_page_content(url):
 
 def get_data_page_vultr(page_content):    
     headers = page_content.xpath('//div[@class="pt__header"]/div[contains(@class, "pt__cell") and not(contains(text(), "Geekbench Score"))]/text()')
-    rows = page_content.xpath('//div[@class="pt__body js-body"]//div[@class="pt__row-content"]/div[contains(@class, "pt__cell")]//strong/text()')
+    rows_elements = page_content.xpath('//div[@class="pt__body js-body"]//div[@class="pt__row-content"]/div[contains(@class, "pt__cell")]//strong/text()')
 
-    formated_data = (headers, rows)
+    formated_data = (headers, rows_elements)
 
     return formated_data
 
 
 def get_data_page_digital(page_content):
-    # busca os headers na página 1, pois, esta sessão não apresenta headers detalhados
-    headers = get_data_page_vultr()[0]
-    rows = page_content.xpath('//')
+    rows_elements = []
+    formated_prices = []
 
-    formated_data = (headers, rows)
+    headers = get_data_page_vultr(get_page_content(site_vultr))[0]              # busca os headers na página 1, pois, esta sessão não apresenta nomes de colunas detalhadamente
+    prices = page_content.xpath('//div[@class="topBox"][1]/div//text()[1]')     # retorna lista com '$' e valores, separados, devido ao arranjo dos elementos no html
+    for x in range(len(prices)):
+        if x == len(prices)-1: break
+        if x % 2 == 1: continue
+        formated_prices.append(prices[x] + prices[x+1])                         # loop para juntar os '$' com seus respectivos valores
+    
+    CPUs = page_content.xpath('//div[@class="topBox"]/following-sibling::div//li/span[contains(text(),"/")]/text()[2]') # busca somente a coluna de CPUs disponíveis
+    memory = page_content.xpath('//div[@class="topBox"]/following-sibling::div//li[1]/text()[1]')                       # busca somente a coluna de memories disponíveis          
+    SSDs = page_content.xpath('//div[@class="topBox"]/following-sibling::div//li[2]/text()[1]')                         # busca somente a coluna de SSDs disponíveis
+    transfer = page_content.xpath('//div[@class="topBox"]/following-sibling::div//li[3]/text()[1]')                     # busca somente a coluna de transfers disponíveis
+                       
+    for x in range(len(CPUs)):                                                  # loop para concatenar todos os valores, respectivamente, em um só array
+        rows_elements.append(SSDs[x])
+        rows_elements.append(CPUs[x])
+        rows_elements.append(memory[x])
+        rows_elements.append(transfer[x])
+        rows_elements.append(formated_prices[x])
+
+    formated_data = (headers, rows_elements)
 
     return formated_data
 

@@ -7,8 +7,10 @@ site_vultr = 'https://www.vultr.com/products/cloud-compute/#pricing'
 site_digital_ocean = 'https://www.digitalocean.com/pricing/#droplet'
 
 def main():
-    print_result(get_data_page_vultr(get_page_content(site_vultr)))
+    data_vultr = get_data_page_vultr(get_page_content(site_vultr))
+    print_result(data_vultr)
 
+    save_csv(data_vultr)
 
 
 
@@ -38,8 +40,14 @@ def get_data_page_digital(page_content):
     return formated_data
 
 
-# def save_csv():
-
+def save_csv(data):
+    with open('csv_file.csv','w') as csv_file:
+        for x in data[0]:
+            csv_file.write(x + ',')
+        for x in range(len(data[1])):
+            if x % 5 == 0:
+                csv_file.write('\n')
+            csv_file.write(data[1][x] + ',')
 
 
 # def save_json():

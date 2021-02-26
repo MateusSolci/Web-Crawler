@@ -12,8 +12,9 @@ def main():
     # save_csv(data_vultr)
 
     data_digital = get_data_page_digital(get_page_content(site_digital_ocean))
-    print(data_digital)
-    save_csv(data_digital)
+    # print(data_digital)
+    # save_csv(data_digital)
+    save_json(data_digital)
 
 
 
@@ -71,8 +72,29 @@ def save_csv(data):
             csv_file.write(data[1][x] + ',')
 
 
-# def save_json():
+def save_json(data):
+    data_dict = {}
+    individual_rows = []
+    aux = []
 
+    for x in range(len(data[1])):
+        if x % 5 == 0 and x != 0:
+            individual_rows.insert(len(individual_rows), aux)
+            del aux
+            aux = []
+        aux.append(data[1][x])
+        if x == len(data[1])-1:
+            individual_rows.insert(len(individual_rows), aux)
+            del aux
+
+    for x in range(len(individual_rows)):
+        new_row = 'Row'+str(x+1)
+        data_dict[new_row] = {}
+        for element in range(len(data[0])):
+            data_dict[new_row][data[0][element]] = individual_rows[x][element]
+
+    with open('json_file.json','w') as json_file:
+        json.dump(data_dict,json_file, ensure_ascii=False, indent=4)
 
 
 def print_result(data):
@@ -81,7 +103,6 @@ def print_result(data):
         if x % 5 == 0:
             print('\n')
         print(data[1][x], end=', ')
-
 
 
 if __name__ == "__main__":

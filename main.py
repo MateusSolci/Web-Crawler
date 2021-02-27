@@ -7,15 +7,21 @@ site_vultr = 'https://www.vultr.com/products/cloud-compute/#pricing'
 site_digital_ocean = 'https://www.digitalocean.com/pricing/#droplet'
 
 def main():
-    # data_vultr = get_data_page_vultr(get_page_content(site_vultr))
-    # print_result(data_vultr)
-    # save_csv(data_vultr)
-
+    data_vultr = get_data_page_vultr(get_page_content(site_vultr))
     data_digital = get_data_page_digital(get_page_content(site_digital_ocean))
-    # print(data_digital)
-    # save_csv(data_digital)
-    save_json(data_digital)
 
+    x = input('Função a ser executada:\n1--print\n2--save_csv\n3--save_json\n')
+    if int(x) == 1:
+        print('Site 1 - Vultr:')
+        print_result(data_vultr)
+        print('\nSite 2 - Digital Ocean:')
+        print_result(data_digital)
+    elif int(x) == 2:
+        save_csv('csv_vultr',data_vultr)
+        save_csv('csv_digital',data_digital)
+    elif int(x) == 3:
+        save_json('json_vultr',data_vultr)
+        save_json('json_digital',data_digital)
 
 
 def get_page_content(url):
@@ -31,14 +37,15 @@ def get_data_page_vultr(page_content):
     headers = page_content.xpath('//div[@class="pt__header"]/div[contains(@class, "pt__cell") and not(contains(text(), "Geekbench Score"))]/text()')
     rows_elements = page_content.xpath('//div[@class="pt__body js-body"]//div[@class="pt__row-content"]/div[contains(@class, "pt__cell")]//strong/text()')
 
-    formated_data = (headers, rows_elements)
+    formatted_data = (headers, rows_elements)
     # retorna uma tupla com duas listas, uma com os headers da tabela e outra com as linhas
-    return formated_data
+    return formatted_data
 
 
 def get_data_page_digital(page_content):
+    # essa função busca apenas as rows, sem os headers, pois, o site não disponibiliza as colunas explícitamente
     rows_elements = []
-    formated_prices = []
+    formatted_prices = []
 
     # busca os headers na página 1, pois, esta sessão não apresenta nomes de colunas detalhadamente
     headers = get_data_page_vultr(get_page_content(site_vultr))[0]    
@@ -50,7 +57,7 @@ def get_data_page_digital(page_content):
     for x in range(len(prices)):
         if x == len(prices)-1: break
         if x % 2 == 1: continue
-        formated_prices.append(prices[x] + prices[x+1])                         
+        formatted_prices.append(prices[x] + prices[x+1])                         
     
     # busca os dados de cada coluna separadamente
     CPUs = page_content.xpath('//div[@class="topBox"]/following-sibling::div//li/span[contains(text(),"/")]/text()[2]') 
@@ -64,29 +71,40 @@ def get_data_page_digital(page_content):
         rows_elements.append(CPUs[x])
         rows_elements.append(memory[x])
         rows_elements.append(transfer[x])
-        rows_elements.append(formated_prices[x])
+        rows_elements.append(formatted_prices[x])
 
     formated_data = (headers, rows_elements)
+
     # retorna uma tupla com duas listas, uma com os headers da tabela e outra com as linhas
     return formated_data
 
 
-def save_csv(data):
+def save_csv(file_name, data):
     # abre um arquivo csv e grava as informações retiradas da tupla, separando pelos headers e rows
-    with open('csv_file.csv','w') as csv_file:
+    aux = []
+    # foi usado um array auxiliar para agrupar os dados de cada linha, inseri-los e depois o array é dropado para continuar com o looping
+    with open(str(file_name) + '.csv','w') as csv_file:
+        wr = csv.writer(csv_file)
         for x in data[0]:
-            csv_file.write(x + ',')
+            aux.append(x)
+        wr.writerow(aux)
+        del aux
+        aux = []
         for x in range(len(data[1])):
-            if x % 5 == 0:
-                csv_file.write('\n')
-            csv_file.write(data[1][x] + ',')
+            if x % 5 == 0 and x != 0:
+                wr.writerow(aux)
+                del aux
+                aux = []
+            aux.append(data[1][x])
+        wr.writerow(aux)
 
 
-def save_json(data):
+def save_json(file_name, data):
     data_dict = {}
     individual_rows = []
     aux = []
-    # foi usado um array auxiliar para guardar temporariamente os 5 dados de cada linha, para inseri-los na lista de listas e em seguida é deletado da memória para não gerar mutação dos dados
+    # foi usado um array auxiliar para guardar temporariamente os 5 dados de cada linha, 
+    # para inseri-los na lista de listas e em seguida é deletado da memória para não gerar mutação dos dados
     
     # loop para separar cada linha da tabela em um array e armazenar em uma lista de arrays
     for x in range(len(data[1])):
@@ -107,7 +125,7 @@ def save_json(data):
             data_dict[new_row][data[0][element]] = individual_rows[x][element]
 
     # salva o arquivo json com os dados armazenados no dict
-    with open('json_file.json','w') as json_file:
+    with open(str(file_name) + '.json','w') as json_file:
         json.dump(data_dict,json_file, ensure_ascii=False, indent=4)
 
 
